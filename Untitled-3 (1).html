@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinépolis en Casa</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 0; background: #111; color: white; }
+        header { background: #222; padding: 1rem; }
+        .pelicula { display: inline-block; margin: 1rem; cursor: pointer; }
+        .pelicula img { width: 200px; height: 300px; border-radius: 12px; }
+        .horarios div { padding: 0.5rem; margin: 0.5rem auto; width: 200px; border-radius: 8px; cursor: pointer; }
+        .verde { background: green; }
+        .amarillo { background: orange; }
+        .rojo { background: red; }
+        .asientos { display: grid; grid-template-columns: repeat(8, 30px); gap: 10px; justify-content: center; margin: 20px; }
+        .asiento { width: 30px; height: 30px; background: gray; cursor: pointer; border-radius: 4px; }
+        .asiento.seleccionado { background: green; }
+        .asiento.reservado { background: red; cursor: not-allowed; }
+        .empleados, .qr-section { display: none; }
+        .scanner { border: 2px solid white; width: 300px; height: 300px; margin: 20px auto; position: relative; }
+        .linea { width: 100%; height: 2px; background: lime; position: absolute; animation: scan 2s infinite; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        .info-qr { margin-top: 20px; text-align: left; display: inline-block; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Cinépolis en Casa</h1>
+    <button onclick="mostrarEmpleados()">Empleados</button>
+    <button onclick="mostrarQR()">Escanear QR</button>
+</header>
+
+<div id="cartelera">
+    <div class="pelicula" onclick="verHorarios('Minecraft')">
+        <img src="img/minecraft.jpg" alt="Minecraft">
+        <p>Minecraft</p>
+    </div>
+    <div class="pelicula" onclick="verHorarios('Blanca Nieves')">
+        <img src="img/blancanieves.jpg" alt="Blanca Nieves">
+        <p>Blanca Nieves</p>
+    </div>
+</div>
+
+<div id="horarios" class="horarios"></div>
+<div id="asientos"></div>
+<div id="emailForm" style="display:none;">
+    <h3>Coloca tu Email para recibir el QR:</h3>
+    <input type="email" id="email" placeholder="tuemail@example.com">
+    <button onclick="enviarQR()">Confirmar Reserva</button>
+</div>
+
+<div class="empleados" id="empleados">
+    <h3>Código de acceso:</h3>
+    <input type="password" id="codigoEmpleado">
+    <button onclick="validarEmpleado()">Entrar</button>
+</div>
+<div id="panelEmpleado" style="display:none;">
+    <h2>Panel de Empleados</h2>
+    <button onclick="crearSala()">Crear Sala</button>
+    <button onclick="verReservas()">Ver Reservaciones</button>
+</div>
+
+<div class="qr-section" id="qrSection">
+    <div class="scanner">
+        <div class="linea"></div>
+    </div>
+    <div class="info-qr">
+        <p><strong>Película:</strong> <span id="qrPelicula">-</span></p>
+        <p><strong>Sala:</strong> <span id="qrSala">-</span></p>
+        <p><strong>Formato:</strong> <span id="qrFormato">-</span></p>
+        <p><strong>Asiento:</strong> <span id="qrAsiento">-</span></p>
+        <p><strong>Email:</strong> <span id="qrEmail">-</span></p>
+        <p><strong>Código de Detección:</strong> <span id="qrCodigo">-</span></p>
+    </div>
+    <input type="text" id="codigoManual" placeholder="Introduce el código de reserva">
+    <button onclick="buscarPorCodigo()">Buscar</button>
+</div>
+
+<script>
+let reservas = {};
+let seleccionados = [];
+let peliculaSeleccionada = "";
+let horarioSeleccionado = "";
+
+function verHorarios(nombre) {
+    peliculaSeleccionada = nombre;
+    document.getElementById('horarios').innerHTML = '';
+    const horarios = ['14:00', '16:00', '18:00'];
+    horarios.forEach(h => {
+        let estado = ['verde', 'amarillo', 'rojo'][Math.floor(Math.random() * 3)];
+        document.getElementById('horarios').innerHTML += `<div class="${estado}" onclick="mostrarAsientos('${h}')">${h}</div>`;
+    });
+}
+
+function mostrarAsientos(horario) {
+    horarioSeleccionado = horario;
+    seleccionados = [];
+    document.getElementById('asientos').innerHTML = '';
+    for (let i = 1; i <= 40; i++) {
+        let div = document.createElement('div');
+        div.className = 'asiento';
+        div.innerText = i;
+        div.onclick = function() {
+            if (!this.classList.contains('reservado')) {
+                this.classList.toggle('seleccionado');
+                const num = this.innerText;
+                if (seleccionados.includes(num)) seleccionados = seleccionados.filter(n => n !== num);
+                else seleccionados.push(num);
+            }
+        };
+        document.getElementById('asientos').appendChild(div);
+    }
+    document.getElementById('emailForm').style.display = 'block';
+}
+
+function enviarQR() {
+    const email = document.getElementById('email').value;
+    const codigo = Math.random().toString(36).substr(2,8).toUpperCase();
+    reservas[codigo] = {
+        pelicula: peliculaSeleccionada,
+        horario: horarioSeleccionado,
+        asientos: [...seleccionados],
+        email
+    };
+    alert('Reserva confirmada! Código: ' + codigo + ' (Simulado envío de QR a ' + email + ')');
+    document.getElementById('emailForm').style.display = 'none';
+    document.getElementById('asientos').innerHTML = '';
+    document.getElementById('horarios').innerHTML = '';
+}
+
+function mostrarEmpleados() {
+    document.getElementById('empleados').style.display = 'block';
+}
+
+function validarEmpleado() {
+    if (document.getElementById('codigoEmpleado').value === '1766') {
+        document.getElementById('panelEmpleado').style.display = 'block';
+        document.getElementById('empleados').style.display = 'none';
+    } else {
+        alert('Código incorrecto.');
+    }
+}
+
+function mostrarQR() {
+    document.getElementById('qrSection').style.display = 'block';
+}
+
+function buscarPorCodigo() {
+    const codigo = document.getElementById('codigoManual').value;
+    if (reservas[codigo]) {
+        let r = reservas[codigo];
+        document.getElementById('qrPelicula').innerText = r.pelicula;
+        document.getElementById('qrSala').innerText = 'Sala 1';
+        document.getElementById('qrFormato').innerText = '2D';
+        document.getElementById('qrAsiento').innerText = r.asientos.join(', ');
+        document.getElementById('qrEmail').innerText = r.email;
+        document.getElementById('qrCodigo').innerText = codigo;
+    } else {
+        alert('Código no encontrado.');
+    }
+}
+</script>
+</body>
+</html>
+
